@@ -7,6 +7,6 @@ package com.devtool.core.exception;
  * @date 2023/11/20
  */
 public interface ErrorCode {
-    String code();
+    int code();
     String message();
 }

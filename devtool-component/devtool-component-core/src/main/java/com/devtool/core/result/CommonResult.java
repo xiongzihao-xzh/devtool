@@ -16,12 +16,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CommonResult<T> {
 
-    public static final String SUCCESS_CODE = "200";
+    public static final int SUCCESS_CODE = 200;
 
     /**
      * 响应码
      */
-    private String code;
+    private int code;
     /**
      * 响应消息
      */
@@ -51,11 +51,11 @@ public class CommonResult<T> {
         return result(ErrorCodeEnum.SERVICE_ERROR.code(), message, null);
     }
 
-    public static <T> CommonResult<T> failed(String code, String message) {
+    public static <T> CommonResult<T> failed(int code, String message) {
         return result(code, message, null);
     }
 
-    private static <T> CommonResult<T> result(String code, String message, T data) {
+    private static <T> CommonResult<T> result(int code, String message, T data) {
         return new CommonResult<>(code, message, data);
     }
 }

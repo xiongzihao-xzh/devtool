@@ -9,18 +9,18 @@ import com.devtool.core.exception.ErrorCode;
  * @date 2023/11/20
  */
 public enum ErrorCodeEnum implements ErrorCode {
-    SERVICE_ERROR("500", "系统执行出错");
+    SERVICE_ERROR(500, "系统执行出错");
 
-    private final String code;
+    private final int code;
     private final String message;
 
-    ErrorCodeEnum(String code, String message) {
+    ErrorCodeEnum(int code, String message) {
         this.code = code;
         this.message = message;
     }
 
     @Override
-    public String code() {
+    public int code() {
         return this.code;
     }
 
