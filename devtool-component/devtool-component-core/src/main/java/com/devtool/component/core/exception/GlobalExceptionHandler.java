@@ -33,6 +33,6 @@ public class GlobalExceptionHandler {
     public CommonResult<?> serviceExceptionHandler(HttpServletRequest request, Throwable ex) {
         log.error("[ex]: {}", ex.toString());
 
-        return CommonResult.failed();
+        return CommonResult.failed(ex.getMessage());
     }
 }
