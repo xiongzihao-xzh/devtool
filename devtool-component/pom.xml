@@ -16,6 +16,7 @@
 
     <modules>
         <module>devtool-component-core</module>
+        <module>devtool-component-idempotent</module>
     </modules>
 
     <dependencies>

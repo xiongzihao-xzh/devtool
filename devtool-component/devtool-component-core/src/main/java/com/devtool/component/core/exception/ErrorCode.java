@@ -1,4 +1,4 @@
-package com.devtool.core.exception;
+package com.devtool.component.core.exception;
 
 /**
  * 错误码统一接口

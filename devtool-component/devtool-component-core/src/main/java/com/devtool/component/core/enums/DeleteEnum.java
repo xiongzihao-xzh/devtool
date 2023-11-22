@@ -1,4 +1,4 @@
-package com.devtool.core.enums;
+package com.devtool.component.core.enums;
 
 /**
  * 逻辑删除标记

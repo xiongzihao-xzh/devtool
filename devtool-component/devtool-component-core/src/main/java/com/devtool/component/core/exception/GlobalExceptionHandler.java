@@ -1,6 +1,6 @@
-package com.devtool.core.exception;
+package com.devtool.component.core.exception;
 
-import com.devtool.core.result.CommonResult;
+import com.devtool.component.core.result.CommonResult;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;

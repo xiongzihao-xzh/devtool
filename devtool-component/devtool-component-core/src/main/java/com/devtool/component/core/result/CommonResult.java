@@ -1,6 +1,6 @@
-package com.devtool.core.result;
+package com.devtool.component.core.result;
 
-import com.devtool.core.enums.ErrorCodeEnum;
+import com.devtool.component.core.enums.ErrorCodeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

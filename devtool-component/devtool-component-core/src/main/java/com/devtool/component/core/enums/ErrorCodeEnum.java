@@ -1,6 +1,6 @@
-package com.devtool.core.enums;
+package com.devtool.component.core.enums;
 
-import com.devtool.core.exception.ErrorCode;
+import com.devtool.component.core.exception.ErrorCode;
 
 /**
  * 错误码枚举
