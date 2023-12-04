@@ -11,7 +11,6 @@
     <packaging>jar</packaging>
 
     <name>tests</name>
-    <url>http://maven.apache.org</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -28,6 +27,12 @@
         <dependency>
             <groupId>com.devtool</groupId>
             <artifactId>devtool-component-core</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.devtool</groupId>
+            <artifactId>devtool-component-idempotent</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
