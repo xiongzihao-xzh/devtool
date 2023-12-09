@@ -12,15 +12,15 @@ import java.util.Date;
 @Slf4j
 public class AuditFieldUtil {
 
-    public static final String DEFAULT_CREATE_BY = "createBy";
-    public static final String DEFAULT_CREATE_TIME = "createTime";
-    public static final String DEFAULT_UPDATE_BY = "updateBy";
-    public static final String DEFAULT_UPDATE_TIME = "updateTime";
+    public static final String DEFAULT_CREATE_BY_FIELD_NAME = "createBy";
+    public static final String DEFAULT_CREATE_TIME_FIELD_NAME = "createTime";
+    public static final String DEFAULT_UPDATE_BY_FIELD_NAME = "updateBy";
+    public static final String DEFAULT_UPDATE_TIME_FIELD_NAME = "updateTime";
 
     private AuditFieldUtil() {}
 
     public static <T> void fillCreateInfo(T obj, String createBy) {
-        fillCreateInfo(obj, createBy, DEFAULT_CREATE_BY, DEFAULT_CREATE_TIME);
+        fillCreateInfo(obj, createBy, DEFAULT_CREATE_BY_FIELD_NAME, DEFAULT_CREATE_TIME_FIELD_NAME);
     }
 
     public static <T> void fillCreateInfo(
@@ -33,7 +33,7 @@ public class AuditFieldUtil {
     }
 
     public static <T> void fillUpdateInfo(T obj, String updateBy) {
-        fillUpdateInfo(obj, updateBy, DEFAULT_UPDATE_BY, DEFAULT_UPDATE_TIME);
+        fillUpdateInfo(obj, updateBy, DEFAULT_UPDATE_BY_FIELD_NAME, DEFAULT_UPDATE_TIME_FIELD_NAME);
     }
 
     public static <T> void fillUpdateInfo(
