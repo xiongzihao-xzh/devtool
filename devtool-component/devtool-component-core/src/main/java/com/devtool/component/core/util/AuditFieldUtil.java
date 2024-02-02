@@ -11,7 +11,7 @@ import java.util.Date;
  */
 @Slf4j
 public class AuditFieldUtil {
-
+    // todo: Field 修改为 Method
     public static final String DEFAULT_CREATE_BY_FIELD_NAME = "createBy";
     public static final String DEFAULT_CREATE_TIME_FIELD_NAME = "createTime";
     public static final String DEFAULT_UPDATE_BY_FIELD_NAME = "updateBy";
