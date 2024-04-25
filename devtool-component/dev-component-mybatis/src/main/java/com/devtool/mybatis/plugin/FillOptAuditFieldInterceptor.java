@@ -13,6 +13,7 @@ import org.apache.ibatis.plugin.Signature;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -38,6 +39,13 @@ public class FillOptAuditFieldInterceptor implements Interceptor {
                 if (Map.class.isAssignableFrom(paramObj.getClass())) {
                     MapperMethod.ParamMap paramMap = (MapperMethod.ParamMap) paramObj;
                     for (Object actualParamObj : paramMap.values()) {
+                        if(actualParamObj instanceof List<?>){
+                            List<?> ListParamObj = (List<?>) actualParamObj;
+                            for (Object each : ListParamObj) {
+                                fillField(each, sqlCommandType);
+                            }
+                        }
+                        
                         fillField(actualParamObj, sqlCommandType);
                     }
                 } else {
