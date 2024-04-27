@@ -44,9 +44,9 @@ public class FillOptAuditFieldInterceptor implements Interceptor {
                             for (Object each : ListParamObj) {
                                 fillField(each, sqlCommandType);
                             }
+                        } else {
+                            fillField(actualParamObj, sqlCommandType);
                         }
-                        
-                        fillField(actualParamObj, sqlCommandType);
                     }
                 } else {
                     fillField(paramObj, sqlCommandType);
