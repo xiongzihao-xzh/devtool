@@ -1,6 +1,7 @@
 package com.devtool.component.core.result;
 
 import com.devtool.component.core.enums.ErrorCodeEnum;
+import com.devtool.component.core.exception.ErrorCode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommonResult<T> {
+public class CommonResult {
 
     public static final int SUCCESS_CODE = 200;
 
@@ -29,33 +30,37 @@ public class CommonResult<T> {
     /**
      * 响应数据
      */
-    private T data;
+    private Object data;
 
-    public static <T> CommonResult<T> success() {
+    public static CommonResult success() {
         return result(SUCCESS_CODE, null, null);
     }
 
-    public static <T> CommonResult<T> success(T data) {
+    public static CommonResult success(Object data) {
         return result(SUCCESS_CODE, null, data);
     }
 
-    public static <T> CommonResult<T> success(String message, T data) {
+    public static CommonResult success(String message, Object data) {
         return result(SUCCESS_CODE, message, data);
     }
 
-    public static <T> CommonResult<T> failed() {
+    public static CommonResult failed() {
         return result(ErrorCodeEnum.SERVICE_ERROR.code(), ErrorCodeEnum.SERVICE_ERROR.message(), null);
     }
 
-    public static <T> CommonResult<T> failed(String message) {
+    public static CommonResult failed(String message) {
         return result(ErrorCodeEnum.SERVICE_ERROR.code(), message, null);
     }
 
-    public static <T> CommonResult<T> failed(int code, String message) {
+    public static CommonResult failed(ErrorCode errorCode) {
+        return result(errorCode.code(), errorCode.message(), null);
+    }
+
+    public static CommonResult failed(int code, String message) {
         return result(code, message, null);
     }
 
-    private static <T> CommonResult<T> result(int code, String message, T data) {
-        return new CommonResult<>(code, message, data);
+    private static CommonResult result(int code, String message, Object data) {
+        return new CommonResult(code, message, data);
     }
 }

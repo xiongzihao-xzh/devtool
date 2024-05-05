@@ -20,7 +20,7 @@ public class GlobalExceptionHandler {
      * 业务异常处理
      */
     @ExceptionHandler(ServiceException.class)
-    public CommonResult<?> serviceExceptionHandler(HttpServletRequest request, ServiceException ex) {
+    public CommonResult serviceExceptionHandler(HttpServletRequest request, ServiceException ex) {
         log.error("[ex]: {}", ex.toString());
 
         return CommonResult.failed(ex.getCode(), ex.getMessage());
@@ -30,7 +30,7 @@ public class GlobalExceptionHandler {
      * 异常捕获兜底
      */
     @ExceptionHandler(Throwable.class)
-    public CommonResult<?> serviceExceptionHandler(HttpServletRequest request, Throwable ex) {
+    public CommonResult serviceExceptionHandler(HttpServletRequest request, Throwable ex) {
         log.error("[ex]: {}", ex.toString());
 
         return CommonResult.failed(ex.getMessage());
