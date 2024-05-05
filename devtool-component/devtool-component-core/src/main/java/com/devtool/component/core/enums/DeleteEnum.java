@@ -16,7 +16,7 @@ public enum DeleteEnum {
         this.code = code;
     }
 
-    private int code() {
+    public int code() {
         return this.code;
     }
 }
