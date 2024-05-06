@@ -1,5 +1,6 @@
 package com.devtool.mybatis.plugin;
 
+import com.devtool.mybatis.constant.ColumnFieldConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.binding.MapperMethod;
 import org.apache.ibatis.executor.Executor;
@@ -16,16 +17,18 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 填充 createBy, createTime, updateBy, updateTime
+ *
+ * @author <a href="mailto:xiongzihao_xzh@163.com">xzh</a>
+ * @date 2024-05-06
+ */
 @Slf4j
 @Intercepts({ @Signature(type = Executor.class, method = "update", args = { MappedStatement.class, Object.class }) })
 public class FillOptAuditFieldInterceptor implements Interceptor {
 
     private static final String INSERT_TYPE = SqlCommandType.INSERT.name();
     private static final String UPDATE_TYPE = SqlCommandType.UPDATE.name();
-    private static final String CREATE_BY = "createBy";
-    private static final String CREATE_TIME = "createTime";
-    private static final String UPDATE_BY = "updateBy";
-    private static final String UPDATE_TIME = "updateTime";
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
@@ -65,16 +68,16 @@ public class FillOptAuditFieldInterceptor implements Interceptor {
 
         for (Field field : paramObjFields) {
             String fileName = field.getName();
-            if (INSERT_TYPE.equals(sqlCommandType) && CREATE_BY.equals(fileName)) {
+            if (INSERT_TYPE.equals(sqlCommandType) && ColumnFieldConstant.CREATE_BY.equals(fileName)) {
                 setOperatorField(paramObj, field);
             }
-            if (INSERT_TYPE.equals(sqlCommandType) && CREATE_TIME.equals(fileName)) {
+            if (INSERT_TYPE.equals(sqlCommandType) && ColumnFieldConstant.CREATE_TIME.equals(fileName)) {
                 setDateTimeField(paramObj, field);
             }
-            if (UPDATE_TYPE.equals(sqlCommandType) && UPDATE_BY.equals(fileName)) {
+            if (UPDATE_TYPE.equals(sqlCommandType) && ColumnFieldConstant.UPDATE_BY.equals(fileName)) {
                 setOperatorField(paramObj, field);
             }
-            if (UPDATE_TYPE.equals(sqlCommandType) && UPDATE_TIME.equals(fileName)) {
+            if (UPDATE_TYPE.equals(sqlCommandType) && ColumnFieldConstant.UPDATE_TIME.equals(fileName)) {
                 setDateTimeField(paramObj, field);
             }
         }
