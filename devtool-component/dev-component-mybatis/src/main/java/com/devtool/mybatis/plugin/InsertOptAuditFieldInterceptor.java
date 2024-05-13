@@ -1,5 +1,6 @@
 package com.devtool.mybatis.plugin;
 
+import lombok.extern.slf4j.Slf4j;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
@@ -16,6 +17,8 @@ import org.apache.ibatis.plugin.Intercepts;
 import org.apache.ibatis.plugin.Invocation;
 import org.apache.ibatis.plugin.Signature;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -25,34 +28,39 @@ import java.util.stream.Collectors;
  * @author <a href="mailto:xiongzihao_xzh@163.com">xzh</a>
  * @date 2024-04-24
  */
+@Slf4j
 @Intercepts({
         @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class})
 })
 public class InsertOptAuditFieldInterceptor implements Interceptor {
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
-        Object[] args = invocation.getArgs();
-        MappedStatement statement = (MappedStatement) args[0];
-        Object parameter = args[1];
-        BoundSql boundSql = statement.getBoundSql(parameter);
-        String originalSql = boundSql.getSql();
+        try {
+            Object[] args = invocation.getArgs();
+            MappedStatement statement = (MappedStatement) args[0];
+            Object parameter = args[1];
+            BoundSql boundSql = statement.getBoundSql(parameter);
+            String originalSql = boundSql.getSql();
 
-        // 在这里编写你的拦截逻辑，可以修改 SQL 语句
-        System.out.println("Original SQL: " + originalSql);
+            // 在这里编写你的拦截逻辑，可以修改 SQL 语句
+            log.info("originalSql:{}", originalSql);
 
-        // 这里可以修改 SQL 语句，比如添加额外的条件
+            // 这里可以修改 SQL 语句，比如添加额外的条件
 //        String modifiedSql = """
 //                update tb_menu
 //                SET menu_name = ?, update_by = 'xzhhhhhhhh'
 //                where id=?
 //                """;
-        String modifiedSql = addStatement(originalSql);
-        System.out.println("Modified SQL: " + modifiedSql);
+            String modifiedSql = addStatement(originalSql);
+            log.info("modifiedSql:{}", modifiedSql);
 
-        // 将修改后的 SQL 语句设置回去
-        BoundSql newBoundSql = new BoundSql(statement.getConfiguration(), modifiedSql, boundSql.getParameterMappings(), boundSql.getParameterObject());
-        MappedStatement newStatement = copyFromMappedStatement(statement, new BoundSqlSqlSource(newBoundSql));
-        args[0] = newStatement;
+            // 将修改后的 SQL 语句设置回去
+            BoundSql newBoundSql = new BoundSql(statement.getConfiguration(), modifiedSql, boundSql.getParameterMappings(), boundSql.getParameterObject());
+            MappedStatement newStatement = copyFromMappedStatement(statement, new BoundSqlSqlSource(newBoundSql));
+            args[0] = newStatement;
+        } catch (Exception e) {
+            log.error("mybatis intercept InsertOptAuditFieldInterceptor 自动填充字段出错: ", e);
+        }
 
         return invocation.proceed();
     }
@@ -101,6 +109,9 @@ public class InsertOptAuditFieldInterceptor implements Interceptor {
 
     public  String addStatement(String sqlStr) throws Exception {
         Statement stmt = CCJSqlParserUtil.parse(sqlStr);
+        
+        // TODO: Insert
+        
         if (stmt instanceof Update) {
             Update updateStatement = (Update) stmt;
             List<UpdateSet> updateSets = updateStatement.getUpdateSets();
@@ -112,7 +123,10 @@ public class InsertOptAuditFieldInterceptor implements Interceptor {
                 addUpdateSetList.add(new UpdateSet(new Column("update_by"),new StringValue("xzh")));
             }
             if(!columnNameSet1.contains("update_time")){
-                addUpdateSetList.add(new UpdateSet(new Column("update_time"),new StringValue(DateUtil.format(DateUtil.date(),"yyyy-MM-dd HH:mm:ss"))));
+                LocalDateTime now = LocalDateTime.now();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                String formattedDateTime = now.format(formatter);
+                addUpdateSetList.add(new UpdateSet(new Column("update_time"),new StringValue(formattedDateTime)));
             }
 
             for (UpdateSet updateSet : updateSets) {
@@ -120,21 +134,25 @@ public class InsertOptAuditFieldInterceptor implements Interceptor {
                 Set<String> columnNameSet = columnList.stream().map(Column::getColumnName).collect(Collectors.toSet());
                 if(columnNameSet.contains("update_by")){
                     // mysql 只支持更新单列值，直接删除
-                    updateSet.getColumns().removeFirst();
-                    updateSet.getValues().removeFirst();
+                    updateSet.getColumns().remove(0);
+                    updateSet.getValues().remove(0);
+                    
                     updateSet.add(new Column("update_by"),new StringValue("xzh"));
                 }
                 if(columnNameSet.contains("update_time")){
                     // mysql 只支持更新单列值，直接删除
-                    updateSet.getColumns().removeFirst();
-                    updateSet.getValues().removeFirst();
-                    updateSet.add(new Column("update_time"),new StringValue(DateUtil.format(DateUtil.date(),"yyyy-MM-dd HH:mm:ss")));
+                    updateSet.getColumns().remove(0);
+                    updateSet.getValues().remove(0);
+
+                    LocalDateTime now = LocalDateTime.now();
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    String formattedDateTime = now.format(formatter);
+                    updateSet.add(new Column("update_time"),new StringValue(formattedDateTime));
                 }
             }
             updateSets.addAll(addUpdateSetList);
         }
-        String modifySql = stmt.toString();
 
-        return modifySql;
+        return stmt.toString();
     }
 }
