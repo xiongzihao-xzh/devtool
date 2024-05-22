@@ -2,11 +2,14 @@ package com.devtool.mybatis.plugin;
 
 import com.devtool.mybatis.constant.ColumnFieldConstant;
 import lombok.extern.slf4j.Slf4j;
+import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.insert.Insert;
+import net.sf.jsqlparser.statement.select.Values;
 import net.sf.jsqlparser.statement.update.Update;
 import net.sf.jsqlparser.statement.update.UpdateSet;
 import org.apache.ibatis.executor.Executor;
@@ -108,39 +111,58 @@ public class InsertOptAuditFieldInterceptor implements Interceptor {
         return builder.substring(0, builder.length() - 1);
     }
 
-    public  String addStatement(String sqlStr) throws Exception {
+    public String addStatement(String sqlStr) throws JSQLParserException {
         Statement stmt = CCJSqlParserUtil.parse(sqlStr);
-        
-        // TODO: Insert
-        
-        if (stmt instanceof Update) {
+
+        // TODO: npe 处理，重复代码重构
+        if (stmt instanceof Insert) {
+            Insert insertStatement = (Insert) stmt;
+            ExpressionList<Column> columns = insertStatement.getColumns();
+            Values values = insertStatement.getValues();
+
+            Set<String> columnNameSet = columns.stream().map(Column::getColumnName).collect(Collectors.toSet());
+
+            if (!columnNameSet.contains(ColumnFieldConstant.CREATE_BY)) {
+                columns.add(new Column(ColumnFieldConstant.CREATE_BY));
+                values.addExpressions(new StringValue("xzh"));
+            }
+
+            if (!columnNameSet.contains(ColumnFieldConstant.CREATE_TIME)) {
+                LocalDateTime now = LocalDateTime.now();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                String formattedDateTime = now.format(formatter);
+                columns.add(new Column(ColumnFieldConstant.CREATE_TIME));
+                values.addExpressions(new StringValue(formattedDateTime));
+            }
+
+        } else if (stmt instanceof Update) {
             Update updateStatement = (Update) stmt;
             List<UpdateSet> updateSets = updateStatement.getUpdateSets();
             List<UpdateSet> addUpdateSetList = new ArrayList<>();
 
             Set<String> columnNameSet1 = updateSets.stream().map(UpdateSet::getColumns).flatMap(List::stream).map(Column::getColumnName).collect(Collectors.toSet());
 
-            if(!columnNameSet1.contains(ColumnFieldConstant.UPDATE_BY)){
-                addUpdateSetList.add(new UpdateSet(new Column(ColumnFieldConstant.UPDATE_BY),new StringValue("xzh")));
+            if (!columnNameSet1.contains(ColumnFieldConstant.UPDATE_BY)) {
+                addUpdateSetList.add(new UpdateSet(new Column(ColumnFieldConstant.UPDATE_BY), new StringValue("xzh")));
             }
-            if(!columnNameSet1.contains(ColumnFieldConstant.UPDATE_TIME)){
+            if (!columnNameSet1.contains(ColumnFieldConstant.UPDATE_TIME)) {
                 LocalDateTime now = LocalDateTime.now();
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
                 String formattedDateTime = now.format(formatter);
-                addUpdateSetList.add(new UpdateSet(new Column(ColumnFieldConstant.UPDATE_TIME),new StringValue(formattedDateTime)));
+                addUpdateSetList.add(new UpdateSet(new Column(ColumnFieldConstant.UPDATE_TIME), new StringValue(formattedDateTime)));
             }
 
             for (UpdateSet updateSet : updateSets) {
                 ExpressionList<Column> columnList = updateSet.getColumns();
                 Set<String> columnNameSet = columnList.stream().map(Column::getColumnName).collect(Collectors.toSet());
-                if(columnNameSet.contains(ColumnFieldConstant.UPDATE_BY)){
+                if (columnNameSet.contains(ColumnFieldConstant.UPDATE_BY)) {
                     // mysql 只支持更新单列值，直接删除
                     updateSet.getColumns().remove(0);
                     updateSet.getValues().remove(0);
-                    
-                    updateSet.add(new Column(ColumnFieldConstant.UPDATE_BY),new StringValue("xzh"));
+
+                    updateSet.add(new Column(ColumnFieldConstant.UPDATE_BY), new StringValue("xzh"));
                 }
-                if(columnNameSet.contains(ColumnFieldConstant.UPDATE_TIME)){
+                if (columnNameSet.contains(ColumnFieldConstant.UPDATE_TIME)) {
                     // mysql 只支持更新单列值，直接删除
                     updateSet.getColumns().remove(0);
                     updateSet.getValues().remove(0);
@@ -148,7 +170,7 @@ public class InsertOptAuditFieldInterceptor implements Interceptor {
                     LocalDateTime now = LocalDateTime.now();
                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
                     String formattedDateTime = now.format(formatter);
-                    updateSet.add(new Column(ColumnFieldConstant.UPDATE_TIME),new StringValue(formattedDateTime));
+                    updateSet.add(new Column(ColumnFieldConstant.UPDATE_TIME), new StringValue(formattedDateTime));
                 }
             }
             updateSets.addAll(addUpdateSetList);
