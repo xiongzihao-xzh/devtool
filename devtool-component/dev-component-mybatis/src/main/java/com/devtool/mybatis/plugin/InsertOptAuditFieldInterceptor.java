@@ -21,9 +21,9 @@ import org.apache.ibatis.plugin.Intercepts;
 import org.apache.ibatis.plugin.Invocation;
 import org.apache.ibatis.plugin.Signature;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,10 +33,9 @@ import java.util.stream.Collectors;
  * @date 2024-04-24
  */
 @Slf4j
-@Intercepts({
-        @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class})
-})
+@Intercepts({ @Signature(type = Executor.class, method = "update", args = { MappedStatement.class, Object.class }) })
 public class InsertOptAuditFieldInterceptor implements Interceptor {
+
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
         try {
@@ -50,16 +49,21 @@ public class InsertOptAuditFieldInterceptor implements Interceptor {
             log.info("originalSql:{}", originalSql);
 
             // 这里可以修改 SQL 语句，比如添加额外的条件
-//        String modifiedSql = """
-//                update tb_menu
-//                SET menu_name = ?, update_by = 'xzhhhhhhhh'
-//                where id=?
-//                """;
+            //        String modifiedSql = """
+            //                update tb_menu
+            //                SET menu_name = ?, update_by = 'xzhhhhhhhh'
+            //                where id=?
+            //                """;
             String modifiedSql = addStatement(originalSql);
             log.info("modifiedSql:{}", modifiedSql);
 
             // 将修改后的 SQL 语句设置回去
-            BoundSql newBoundSql = new BoundSql(statement.getConfiguration(), modifiedSql, boundSql.getParameterMappings(), boundSql.getParameterObject());
+            BoundSql newBoundSql = new BoundSql(
+                statement.getConfiguration(),
+                modifiedSql,
+                boundSql.getParameterMappings(),
+                boundSql.getParameterObject()
+            );
             MappedStatement newStatement = copyFromMappedStatement(statement, new BoundSqlSqlSource(newBoundSql));
             args[0] = newStatement;
         } catch (Exception e) {
@@ -71,7 +75,12 @@ public class InsertOptAuditFieldInterceptor implements Interceptor {
 
     // 创建一个新的 MappedStatement 对象
     private MappedStatement copyFromMappedStatement(MappedStatement ms, SqlSource newSqlSource) {
-        MappedStatement.Builder builder = new MappedStatement.Builder(ms.getConfiguration(), ms.getId(), newSqlSource, ms.getSqlCommandType());
+        MappedStatement.Builder builder = new MappedStatement.Builder(
+            ms.getConfiguration(),
+            ms.getId(),
+            newSqlSource,
+            ms.getSqlCommandType()
+        );
         builder.resource(ms.getResource());
         builder.fetchSize(ms.getFetchSize());
         builder.statementType(ms.getStatementType());
@@ -88,6 +97,7 @@ public class InsertOptAuditFieldInterceptor implements Interceptor {
     }
 
     private static class BoundSqlSqlSource implements SqlSource {
+
         BoundSql boundSql;
 
         public BoundSqlSqlSource(BoundSql boundSql) {
@@ -114,68 +124,95 @@ public class InsertOptAuditFieldInterceptor implements Interceptor {
     public String addStatement(String sqlStr) throws JSQLParserException {
         Statement stmt = CCJSqlParserUtil.parse(sqlStr);
 
-        // TODO: npe 处理，重复代码重构
         if (stmt instanceof Insert) {
             Insert insertStatement = (Insert) stmt;
             ExpressionList<Column> columns = insertStatement.getColumns();
             Values values = insertStatement.getValues();
 
+            if (columns == null || values == null) {
+                return stmt.toString();
+            }
+
+            // 获取 column name
             Set<String> columnNameSet = columns.stream().map(Column::getColumnName).collect(Collectors.toSet());
 
             if (!columnNameSet.contains(ColumnFieldConstant.CREATE_BY)) {
                 columns.add(new Column(ColumnFieldConstant.CREATE_BY));
-                values.addExpressions(new StringValue("xzh"));
+                values.addExpressions(new StringValue(getContextUsername()));
             }
 
             if (!columnNameSet.contains(ColumnFieldConstant.CREATE_TIME)) {
-                LocalDateTime now = LocalDateTime.now();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                String formattedDateTime = now.format(formatter);
                 columns.add(new Column(ColumnFieldConstant.CREATE_TIME));
-                values.addExpressions(new StringValue(formattedDateTime));
+                values.addExpressions(new StringValue(getNowDateFormat()));
             }
-
         } else if (stmt instanceof Update) {
             Update updateStatement = (Update) stmt;
             List<UpdateSet> updateSets = updateStatement.getUpdateSets();
-            List<UpdateSet> addUpdateSetList = new ArrayList<>();
+            List<UpdateSet> addedUpdateSetList = new ArrayList<>();
 
-            Set<String> columnNameSet1 = updateSets.stream().map(UpdateSet::getColumns).flatMap(List::stream).map(Column::getColumnName).collect(Collectors.toSet());
-
-            if (!columnNameSet1.contains(ColumnFieldConstant.UPDATE_BY)) {
-                addUpdateSetList.add(new UpdateSet(new Column(ColumnFieldConstant.UPDATE_BY), new StringValue("xzh")));
+            if (updateSets == null) {
+                return stmt.toString();
             }
-            if (!columnNameSet1.contains(ColumnFieldConstant.UPDATE_TIME)) {
-                LocalDateTime now = LocalDateTime.now();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                String formattedDateTime = now.format(formatter);
-                addUpdateSetList.add(new UpdateSet(new Column(ColumnFieldConstant.UPDATE_TIME), new StringValue(formattedDateTime)));
+
+            // update set 的 column name
+            Set<String> originalColumnNameSet = updateSets
+                .stream()
+                .map(UpdateSet::getColumns)
+                .flatMap(List::stream)
+                .map(Column::getColumnName)
+                .collect(Collectors.toSet());
+
+            if (!originalColumnNameSet.contains(ColumnFieldConstant.UPDATE_BY)) {
+                // 不存在 update_by 列则插入 update_by 列到 set 语句后面
+                addedUpdateSetList.add(
+                    new UpdateSet(new Column(ColumnFieldConstant.UPDATE_BY), new StringValue(getContextUsername()))
+                );
+            }
+            if (!originalColumnNameSet.contains(ColumnFieldConstant.UPDATE_TIME)) {
+                // 不存在 update_time 列则插入 update_time 列到 set 语句后面
+                addedUpdateSetList.add(
+                    new UpdateSet(new Column(ColumnFieldConstant.UPDATE_TIME), new StringValue(getNowDateFormat()))
+                );
             }
 
             for (UpdateSet updateSet : updateSets) {
+                if (updateSet == null) {
+                    return stmt.toString();
+                }
                 ExpressionList<Column> columnList = updateSet.getColumns();
+                if (columnList == null) {
+                    continue;
+                }
+
                 Set<String> columnNameSet = columnList.stream().map(Column::getColumnName).collect(Collectors.toSet());
                 if (columnNameSet.contains(ColumnFieldConstant.UPDATE_BY)) {
                     // mysql 只支持更新单列值，直接删除
                     updateSet.getColumns().remove(0);
                     updateSet.getValues().remove(0);
 
-                    updateSet.add(new Column(ColumnFieldConstant.UPDATE_BY), new StringValue("xzh"));
+                    updateSet.add(new Column(ColumnFieldConstant.UPDATE_BY), new StringValue(getContextUsername()));
                 }
                 if (columnNameSet.contains(ColumnFieldConstant.UPDATE_TIME)) {
                     // mysql 只支持更新单列值，直接删除
                     updateSet.getColumns().remove(0);
                     updateSet.getValues().remove(0);
 
-                    LocalDateTime now = LocalDateTime.now();
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                    String formattedDateTime = now.format(formatter);
-                    updateSet.add(new Column(ColumnFieldConstant.UPDATE_TIME), new StringValue(formattedDateTime));
+                    updateSet.add(new Column(ColumnFieldConstant.UPDATE_TIME), new StringValue(getNowDateFormat()));
                 }
             }
-            updateSets.addAll(addUpdateSetList);
+            updateSets.addAll(addedUpdateSetList);
         }
 
         return stmt.toString();
+    }
+
+    private String getContextUsername() {
+        return "xzh";
+    }
+
+    private String getNowDateFormat() {
+        Date now = new Date();
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        return format.format(now);
     }
 }
