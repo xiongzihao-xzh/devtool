@@ -54,7 +54,7 @@ public class InsertOptAuditFieldInterceptor implements Interceptor {
             //                SET menu_name = ?, update_by = 'xzhhhhhhhh'
             //                where id=?
             //                """;
-            String modifiedSql = addStatement(originalSql);
+            String modifiedSql = addedStatement(originalSql);
             log.info("modifiedSql:{}", modifiedSql);
 
             // 将修改后的 SQL 语句设置回去
@@ -121,9 +121,10 @@ public class InsertOptAuditFieldInterceptor implements Interceptor {
         return builder.substring(0, builder.length() - 1);
     }
 
-    public String addStatement(String sqlStr) throws JSQLParserException {
+    public String addedStatement(String sqlStr) throws JSQLParserException {
         Statement stmt = CCJSqlParserUtil.parse(sqlStr);
 
+        // TODO: 策略模式重构
         if (stmt instanceof Insert) {
             Insert insertStatement = (Insert) stmt;
             ExpressionList<Column> columns = insertStatement.getColumns();
@@ -175,6 +176,7 @@ public class InsertOptAuditFieldInterceptor implements Interceptor {
                 );
             }
 
+            // 对应的是 update_xxx = ?, 替换 mybatis 中 ? 占位符
             for (UpdateSet updateSet : updateSets) {
                 if (updateSet == null) {
                     return stmt.toString();
@@ -187,23 +189,33 @@ public class InsertOptAuditFieldInterceptor implements Interceptor {
                 Set<String> columnNameSet = columnList.stream().map(Column::getColumnName).collect(Collectors.toSet());
                 if (columnNameSet.contains(ColumnFieldConstant.UPDATE_BY)) {
                     // mysql 只支持更新单列值，直接删除
-                    updateSet.getColumns().remove(0);
-                    updateSet.getValues().remove(0);
+                    removeUpdateSet(updateSet);
 
                     updateSet.add(new Column(ColumnFieldConstant.UPDATE_BY), new StringValue(getContextUsername()));
                 }
                 if (columnNameSet.contains(ColumnFieldConstant.UPDATE_TIME)) {
                     // mysql 只支持更新单列值，直接删除
-                    updateSet.getColumns().remove(0);
-                    updateSet.getValues().remove(0);
+                    removeUpdateSet(updateSet);
 
                     updateSet.add(new Column(ColumnFieldConstant.UPDATE_TIME), new StringValue(getNowDateFormat()));
                 }
             }
+
             updateSets.addAll(addedUpdateSetList);
         }
 
         return stmt.toString();
+    }
+
+    private void removeUpdateSet(UpdateSet updateSet) {
+        ExpressionList<Column> columns = updateSet.getColumns();
+        if (columns != null) {
+            columns.remove(0);
+        }
+        ExpressionList<?> values = updateSet.getValues();
+        if (values != null) {
+            values.remove(0);
+        }
     }
 
     private String getContextUsername() {
