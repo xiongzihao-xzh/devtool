@@ -1,20 +1,16 @@
 package com.devtool.component.core.exception;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 /**
  * @author <a href="mailto:xiongzihao_xzh@163.com">xzh</a>
  * @date 2023/11/20
  */
 @Getter
-@Setter
-@NoArgsConstructor
 public class ServiceException extends RuntimeException {
 
-    private int code;
-    private String message;
+    private final int code;
+    private final String message;
 
     public ServiceException(ErrorCode errorCode) {
         this.code = errorCode.code();

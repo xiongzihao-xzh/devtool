@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommonResult {
+public class CommonResult<T> {
 
     public static final int SUCCESS_CODE = 200;
 
@@ -30,37 +30,37 @@ public class CommonResult {
     /**
      * 响应数据
      */
-    private Object data;
+    private T data;
 
-    public static CommonResult success() {
+    public static <R> CommonResult<R> success() {
         return result(SUCCESS_CODE, null, null);
     }
 
-    public static CommonResult success(Object data) {
+    public static <R> CommonResult<R> success(R data) {
         return result(SUCCESS_CODE, null, data);
     }
 
-    public static CommonResult success(String message, Object data) {
+    public static <R> CommonResult<R> success(String message, R data) {
         return result(SUCCESS_CODE, message, data);
     }
 
-    public static CommonResult failed() {
+    public static <R> CommonResult<R> failed() {
         return result(ErrorCodeEnum.SERVICE_ERROR.code(), ErrorCodeEnum.SERVICE_ERROR.message(), null);
     }
 
-    public static CommonResult failed(String message) {
+    public static <R> CommonResult<R> failed(String message) {
         return result(ErrorCodeEnum.SERVICE_ERROR.code(), message, null);
     }
 
-    public static CommonResult failed(ErrorCode errorCode) {
+    public static <R> CommonResult<R> failed(ErrorCode errorCode) {
         return result(errorCode.code(), errorCode.message(), null);
     }
 
-    public static CommonResult failed(int code, String message) {
+    public static <R> CommonResult<R> failed(int code, String message) {
         return result(code, message, null);
     }
 
-    private static CommonResult result(int code, String message, Object data) {
-        return new CommonResult(code, message, data);
+    private static <R> CommonResult<R> result(int code, String message, R data) {
+        return new CommonResult<>(code, message, data);
     }
 }
